@@ -159,7 +159,9 @@ body{font-family:Arial,sans-serif;background:#f0f0ec;min-height:100vh;display:fl
     <p class="sub" id="subCasa">Selecciona tu número de la lista.</p>
     <div class="fg">
       <label>Número de casa</label>
-      <select id="selCasa"><option value="">— Elige tu número —</option></select>
+      <input type="text" id="selCasa" placeholder="Ej: 505-1, 721, 202..." inputmode="numeric"
+        style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <div id="casaSugerencias" style="background:white;border:1.5px solid #1a3a6b;border-top:none;border-radius:0 0 10px 10px;display:none;max-height:200px;overflow-y:auto;position:relative;z-index:10"></div>
     </div>
     <div id="errCasa" class="err-msg">⚠️ Por favor selecciona tu número de casa.</div>
     <button class="btn btn-az" onclick="irPaso3()">Continuar →</button>
@@ -291,6 +293,39 @@ const VECINOS = {
 
 let D={calle:'',calleNom:'',calleIco:'',casa:'',nombre:'',tipo:'',mes:'',mesLabel:'',mesAnio:0,monto:0,nota:'',fotoB64:''};
 
+
+function setupAutocompleteCasa(){
+  const input = document.getElementById('selCasa');
+  const sugg  = document.getElementById('casaSugerencias');
+  if(!input || !sugg) return;
+  input.addEventListener('input', function(){
+    const val = this.value.trim().toUpperCase();
+    sugg.innerHTML='';
+    if(!val || !D.calle){ sugg.style.display='none'; return; }
+    const matches = (VECINOS[D.calle]||[])
+      .filter(v => v[0].toUpperCase().startsWith(val))
+      .slice(0,6);
+    if(matches.length===0){ sugg.style.display='none'; return; }
+    matches.forEach(v=>{
+      const div = document.createElement('div');
+      div.textContent = v[0];
+      div.style.cssText='padding:12px 14px;cursor:pointer;font-size:15px;border-bottom:1px solid #eee;';
+      div.addEventListener('click',()=>{
+        input.value=v[0];
+        sugg.style.display='none';
+      });
+      div.addEventListener('mouseover',()=>div.style.background='#EBF2FA');
+      div.addEventListener('mouseout', ()=>div.style.background='white');
+      sugg.appendChild(div);
+    });
+    sugg.style.display='block';
+  });
+  // Hide suggestions when clicking outside
+  document.addEventListener('click', function(e){
+    if(e.target!==input) sugg.style.display='none';
+  });
+}
+
 function llenarMeses(){
   const s=document.getElementById('selMes');
   s.innerHTML='<option value="">— Elige el mes —</option>';
@@ -316,18 +351,21 @@ function selCalle(id,ico,nom,det,el){
     o.value=v[0]; o.textContent=v[0]+(v[1]?'  ·  '+v[1]:'');
     s.appendChild(o);
   });
-  document.getElementById('subCasa').textContent='Selecciona el número de tu casa en '+nom+'.';
+  document.getElementById('subCasa').textContent='Escribe el número de tu casa en '+nom+'.';
+  document.getElementById('selCasa').value='';
+  document.getElementById('casaSugerencias').style.display='none';
   setTimeout(()=>irPaso(2),280);
 }
 
 function irPaso3(){
   const s=document.getElementById('selCasa');
   const e=document.getElementById('errCasa');
-  if(!s.value){e.style.display='block';return;}
+  const val = s.value.trim().toUpperCase();
+  if(!val){e.style.display='block';e.textContent='⚠️ Escribe tu número de casa.';return;}
   e.style.display='none';
-  D.casa=s.value;
-  const v=(VECINOS[D.calle]||[]).find(x=>x[0]===s.value);
-  D.nombre=v?v[1]:s.value;
+  D.casa=val;
+  const v=(VECINOS[D.calle]||[]).find(x=>x[0]===val);
+  D.nombre=v?v[1]:'Casa '+val;
   llenarMeses();
   document.getElementById('inMonto').value='350';
   D.tipo=''; D.fotoB64='';
@@ -466,6 +504,7 @@ function reiniciar(){
 }
 
 llenarMeses();
+setupAutocompleteCasa();
 </script>
 </body>
 </html>
