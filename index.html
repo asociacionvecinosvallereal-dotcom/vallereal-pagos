@@ -281,7 +281,7 @@ body{font-family:Arial,sans-serif;background:#f0f0ec;min-height:100vh;display:fl
 <div class="footer">Valle Real · Sistema de aportaciones vecinales</div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyR8TbrR-DSCNB8XxKKYXsKE8TCSxPkKfIoKDu8vJOu7abOGSN-NraU0kLNjDo8GU8snw/exec";
+const API = "https://script.google.com/macros/s/AKfycbxBsEZd7jatsm1Tn5J1Z6KYyxD_sln_bPWfXbChL5coohtmmlx44PobjWIafIeS13N_/exec";
 const NM = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const AM = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -456,7 +456,7 @@ async function confirmar(){
       tipoPago:D.tipo,
       nota:D.nota||(D.tipo==='transferencia'?'Transferencia bancaria':'Pago en efectivo'),
       estado:D.tipo==='transferencia'?'Pendiente':'Pendiente-efectivo',
-      comprobante: D.fotoB64 ? D.fotoB64.substring(0,50000) : ''
+      comprobante: '' // La foto se ve en la pagina de validacion, no se guarda en Sheets
     };
     // Usar no-cors para evitar bloqueo CORS de Apps Script
     await fetch(API, {
