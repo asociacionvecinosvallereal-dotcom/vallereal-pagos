@@ -419,18 +419,46 @@ function onFoto(inp){
   const file=inp.files[0]; if(!file) return;
   const ua=document.getElementById('uploadArea');
   const prev=document.getElementById('previewImg');
+
+  // Si es PDF, no se puede comprimir - guardar tal cual (limitado)
+  if(file.type==='application/pdf'){
+    const r=new FileReader();
+    r.onload=function(e){
+      D.fotoB64=''; // PDF no se guarda por tamaño
+      prev.style.display='none';
+      ua.className='upload-area tiene-img';
+      ua.querySelector('.uico').textContent='✅';
+      ua.querySelector('.utxt').textContent=file.name+' (PDF)';
+      ua.querySelector('.udet').textContent='Toca para cambiar';
+    };
+    r.readAsDataURL(file);
+    return;
+  }
+
+  // Comprimir imagen a calidad mínima legible
   const r=new FileReader();
   r.onload=function(e){
-    D.fotoB64=e.target.result;
-    if(file.type.startsWith('image/')){
-      prev.src=e.target.result; prev.style.display='block';
-    } else {
-      prev.style.display='none';
-    }
-    ua.className='upload-area tiene-img';
-    ua.querySelector('.uico').textContent='✅';
-    ua.querySelector('.utxt').textContent=file.name;
-    ua.querySelector('.udet').textContent='Toca para cambiar';
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement('canvas');
+      // Reducir tamaño manteniendo legibilidad - max 800px en el lado mayor
+      let w=img.width, h=img.height;
+      const maxDim=800;
+      if(w>h && w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; }
+      else if(h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; }
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+      ctx.drawImage(img,0,0,w,h);
+      // Calidad 0.5 = comprimido pero legible para comprobantes
+      D.fotoB64=canvas.toDataURL('image/jpeg', 0.5);
+      prev.src=D.fotoB64; prev.style.display='block';
+      ua.className='upload-area tiene-img';
+      ua.querySelector('.uico').textContent='✅';
+      ua.querySelector('.utxt').textContent='Comprobante listo';
+      ua.querySelector('.udet').textContent='Toca para cambiar';
+    };
+    img.src=e.target.result;
   };
   r.readAsDataURL(file);
 }
@@ -476,7 +504,7 @@ async function confirmar(){
       tipoPago:D.tipo,
       nota:D.nota||(D.tipo==='transferencia'?'Transferencia bancaria':'Pago en efectivo'),
       estado:D.tipo==='transferencia'?'Pendiente':'Pendiente-efectivo',
-      comprobante: '' // La foto se ve en la pagina de validacion, no se guarda en Sheets
+      comprobante: D.fotoB64 || ''
     };
     // Usar no-cors para evitar bloqueo CORS de Apps Script
     await fetch(API, {
