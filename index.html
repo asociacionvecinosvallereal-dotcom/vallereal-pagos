@@ -164,7 +164,7 @@ body{font-family:Arial,sans-serif;background:#f0f0ec;min-height:100vh;display:fl
       <div id="casaSugerencias" style="background:white;border:1.5px solid #1a3a6b;border-top:none;border-radius:0 0 10px 10px;display:none;max-height:200px;overflow-y:auto;position:relative;z-index:10"></div>
     </div>
     <div class="fg">
-      <label>Tu WhatsApp (para confirmaciones)</label>
+      <label>Tu WhatsApp (opcional)</label>
       <div style="display:flex;gap:8px">
         <input type="text" id="inLada" value="52" inputmode="numeric" autocomplete="off"
           maxlength="3" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
@@ -174,7 +174,7 @@ body{font-family:Arial,sans-serif;background:#f0f0ec;min-height:100vh;display:fl
           maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="flex:1">
       </div>
       <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">
-        📱 Recibirás la confirmación por WhatsApp. El <strong>52</strong> es el código de México (cámbialo si eres de otro país). Solo lo pedimos una vez.
+        📱 Si lo proporcionas, recibirás confirmación por WhatsApp. El <strong>52</strong> es México (cámbialo si eres de otro país). Puedes dejarlo vacío.
       </div>
     </div>
     <div id="errCasa" class="err-msg">⚠️ Por favor completa los campos.</div>
@@ -365,9 +365,17 @@ function selCalle(id,ico,nom,det,el){
     o.value=v[0]; o.textContent=v[0]+(v[1]?'  ·  '+v[1]:'');
     s.appendChild(o);
   });
-  document.getElementById('subCasa').textContent='Escribe tu casa en '+nom+' y tu WhatsApp.';
+  document.getElementById('subCasa').textContent='Escribe tu casa en '+nom+'. El WhatsApp es opcional.';
   document.getElementById('selCasa').value='';
   document.getElementById('casaSugerencias').style.display='none';
+  // Pre-llenar teléfono si ya lo dio antes
+  try{
+    if(window.name){
+      const saved = JSON.parse(window.name);
+      if(saved.tel){ document.getElementById('inTelefono').value = saved.tel; }
+      if(saved.lada){ document.getElementById('inLada').value = saved.lada; }
+    }
+  }catch(ex){}
   setTimeout(()=>irPaso(2),280);
 }
 
@@ -379,11 +387,15 @@ function irPaso3(){
   if(!val){e.style.display='block';e.textContent='⚠️ Escribe tu número de casa.';return;}
   const lada = document.getElementById('inLada').value.trim();
   const telVal = tel.value.trim();
-  if(!telVal || telVal.length < 10){e.style.display='block';e.textContent='⚠️ Escribe tu número de WhatsApp (10 dígitos).';return;}
-  if(!lada){e.style.display='block';e.textContent='⚠️ Escribe el código de país.';return;}
+  // El teléfono ahora es OPCIONAL - solo validar si lo escribieron
+  if(telVal && telVal.length > 0 && telVal.length < 10){
+    e.style.display='block';e.textContent='⚠️ El WhatsApp debe tener 10 dígitos (o déjalo vacío).';return;
+  }
   e.style.display='none';
   D.casa=val;
-  D.telefono=lada+telVal;
+  D.telefono = telVal ? (lada+telVal) : '';
+  // Recordar el teléfono para la próxima vez (en memoria de sesión)
+  if(D.telefono){ try{ window.name = JSON.stringify({tel:telVal, lada:lada}); }catch(ex){} }
   const v=(VECINOS[D.calle]||[]).find(x=>x[0]===val);
   D.nombre=v?v[1]:'Casa '+val;
   llenarMeses();
